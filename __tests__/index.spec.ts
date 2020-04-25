@@ -1,4 +1,4 @@
-import { getLinkPreview } from "../build/index";
+import { getLinkPreview } from "../index";
 
 describe(`link preview`, () => {
   it(`should extract link info from just URL`, async () => {
@@ -122,18 +122,19 @@ describe(`link preview`, () => {
   });
 
   // This site changed? it is not returning application any more but rather website
-  // it(`should handle application urls`, async () => {
-  //   const linkInfo = await getLinkPreview(
-  //     `https://assets.curtmfg.com/masterlibrary/56282/installsheet/CME_56282_INS.pdf`,
-  //   );
+  // eslint-disable-next-line jest/no-disabled-tests
+  it.skip(`should handle application urls`, async () => {
+    const linkInfo = await getLinkPreview(
+      `https://assets.curtmfg.com/masterlibrary/56282/installsheet/CME_56282_INS.pdf`,
+    );
 
-  //   expect(linkInfo.url).toEqual(
-  //     `https://assets.curtmfg.com/masterlibrary/56282/installsheet/CME_56282_INS.pdf`,
-  //   );
-  //   expect(linkInfo.mediaType).toEqual(`application`);
-  //   expect(linkInfo.contentType.toLowerCase()).toEqual(`application/pdf`);
-  //   expect(linkInfo.favicons[0]).toBeTruthy();
-  // });
+    expect(linkInfo.url).toEqual(
+      `https://assets.curtmfg.com/masterlibrary/56282/installsheet/CME_56282_INS.pdf`,
+    );
+    expect(linkInfo.mediaType).toEqual(`application`);
+    expect(linkInfo.contentType.toLowerCase()).toEqual(`application/pdf`);
+    expect(linkInfo.favicons[0]).toBeTruthy();
+  });
 
   it(`no link in text should fail gracefully`, async () => {
     await expect(

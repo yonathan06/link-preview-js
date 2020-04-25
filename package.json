@@ -19,8 +19,8 @@
   "license": "MIT",
   "repository": "https://github.com/ospfranco/link-preview-js",
   "dependencies": {
-    "cheerio-without-node-native": "0.20.2",
     "cross-fetch": "3.0.4",
+    "react-native-html-parser": "^0.1.0",
     "url": "0.11.0"
   },
   "devDependencies": {

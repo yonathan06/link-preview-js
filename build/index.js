@@ -39,33 +39,35 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var cheerio_without_node_native_1 = __importDefault(require("cheerio-without-node-native"));
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore
+var react_native_html_parser_1 = __importDefault(require("react-native-html-parser"));
 var cross_fetch_1 = require("cross-fetch");
 var url_1 = __importDefault(require("url"));
 var constants_1 = require("./constants");
-function getTitle(doc) {
-    var title = doc("meta[property='og:title']").attr("content");
-    if (!title) {
-        title = doc("title").text();
+var Response_model_1 = require("./Response.model");
+function getNodeValue(node) {
+    if (node) {
+        return node.attributes[1].nodeValue;
     }
-    return title;
+    return null;
+}
+function getTitle(doc) {
+    return getNodeValue(doc.querySelect("meta[property='og:title']")[0]);
 }
 function getSiteName(doc) {
-    var siteName = doc("meta[property='og:site_name']").attr("content");
-    return siteName;
+    return getNodeValue(doc.querySelect("meta[property='og:site_name']")[0]);
 }
 function getDescription(doc) {
-    var description = doc("meta[name=description]").attr("content");
-    if (description === undefined) {
-        description = doc("meta[name=Description]").attr("content");
-    }
-    if (description === undefined) {
-        description = doc("meta[property='og:description']").attr("content");
+    var description = getNodeValue(doc.querySelect("meta[name=Description]")[0]);
+    if (description == null) {
+        description = getNodeValue(doc.querySelect("meta[property='og:description']")[0]);
     }
     return description;
 }
+// TODO I don't know what this returns, the node definitely has no length?
 function getMediaType(doc) {
-    var node = doc("meta[name=medium]");
+    var node = doc.querySelect("meta[name=Description]")[0];
     if (node.length) {
         var content = node.attr("content");
         return content === "image" ? "photo" : content;
@@ -191,41 +193,41 @@ function getFavicons(doc, rootUrl) {
     return images;
 }
 function parseImageResponse(url, contentType) {
-    return {
+    return new Response_model_1.ResponseModel({
         url: url,
         mediaType: "image",
         contentType: contentType,
         favicons: [getDefaultFavicon(url)],
-    };
+    });
 }
 function parseAudioResponse(url, contentType) {
-    return {
+    return new Response_model_1.ResponseModel({
         url: url,
         mediaType: "audio",
         contentType: contentType,
         favicons: [getDefaultFavicon(url)],
-    };
+    });
 }
 function parseVideoResponse(url, contentType) {
-    return {
+    return new Response_model_1.ResponseModel({
         url: url,
         mediaType: "video",
         contentType: contentType,
         favicons: [getDefaultFavicon(url)],
-    };
+    });
 }
 function parseApplicationResponse(url, contentType) {
-    return {
+    return new Response_model_1.ResponseModel({
         url: url,
         mediaType: "application",
         contentType: contentType,
         favicons: [getDefaultFavicon(url)],
-    };
+    });
 }
 function parseTextResponse(body, url, options, contentType) {
     if (options === void 0) { options = {}; }
-    var doc = cheerio_without_node_native_1.default.load(body);
-    return {
+    var doc = new react_native_html_parser_1.default.DOMParser().parseFromString(body);
+    return new Response_model_1.ResponseModel({
         url: url,
         title: getTitle(doc),
         siteName: getSiteName(doc),
@@ -235,7 +237,7 @@ function parseTextResponse(body, url, options, contentType) {
         images: getImages(doc, url, options.imagesPropertyType),
         videos: getVideos(doc),
         favicons: getFavicons(doc, url),
-    };
+    });
 }
 function getLinkPreview(text, options) {
     var _a, _b;

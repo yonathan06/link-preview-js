@@ -1,95 +1,96 @@
-import cheerio from "cheerio-without-node-native";
+// eslint-disable-next-line @typescript-eslint/ban-ts-ignore
+// @ts-ignore
+import DomParser from 'react-native-html-parser';
 import { fetch } from "cross-fetch";
 import urlObj from "url";
 import { CONSTANTS } from "./constants";
+import { ResponseModel } from './Response.model';
 
 interface ILinkPreviewOptions {
   headers?: Record<string, string>;
   imagesPropertyType?: string;
 }
 
-function getTitle(doc: any) {
-  let title = doc(`meta[property='og:title']`).attr(`content`);
-
-  if (!title) {
-    title = doc(`title`).text();
+function getNodeValue(node?: any) {
+  if (node) {
+    return node.attributes[1].nodeValue;
   }
+  return null;
+}
 
-  return title;
+function getTitle(doc: any) {
+  return getNodeValue(doc.querySelect(`meta[property='og:title']`)[0]);
 }
 
 function getSiteName(doc: any) {
-  const siteName = doc(`meta[property='og:site_name']`).attr(`content`);
-
-  return siteName;
+  return getNodeValue(doc.querySelect(`meta[property='og:site_name']`)[0]);
 }
 
 function getDescription(doc: any) {
-  let description = doc(`meta[name=description]`).attr(`content`);
+  let description = getNodeValue(doc.querySelect(`meta[name=Description]`)[0]);
 
-  if (description === undefined) {
-    description = doc(`meta[name=Description]`).attr(`content`);
-  }
-
-  if (description === undefined) {
-    description = doc(`meta[property='og:description']`).attr(`content`);
+  if (description == null) {
+    description = getNodeValue(doc.querySelect(`meta[property='og:description']`)[0]);
   }
 
   return description;
 }
 
+// TODO I don't know what this returns, the node definitely has no length?
 function getMediaType(doc: any) {
-  const node = doc(`meta[name=medium]`);
+  return getNodeValue(doc.querySelect(`meta[property='og:type']`)[0]);
+  // const nodes = doc.querySelect(`meta[name=medium]`);
 
-  if (node.length) {
-    const content = node.attr(`content`);
-    return content === `image` ? `photo` : content;
-  }
-  return doc(`meta[property='og:type']`).attr(`content`);
+  // if (nodes.length) {
+  //   console.warn(`MEDIA TYPE NODES: ${nodes.length}`, nodes[0]);
+  //   const value = getNodeValue(nodes[0]);
+  //   return value === `image` ? `photo` : value;
+  // }
+
+  // return getNodeValue(doc.querySelect(`meta[property='og:type']`)[0]);
 }
 
 function getImages(doc: any, rootUrl: string, imagesPropertyType?: string) {
-  let images: string[] = [];
-  let nodes;
+  const images: string[] = [];
+
   let src;
-  let dic: Record<string, boolean> = {};
+  // let dic: Record<string, boolean> = {};
 
   const imagePropertyType = imagesPropertyType ?? `og`;
-  nodes = doc(`meta[property='${imagePropertyType}:image']`);
+  const nodes = doc.querySelect(`meta[property='${imagePropertyType}:image']`);
 
   if (nodes.length) {
-    nodes.each((_: number, node: any) => {
-      src = node.attribs.content;
+    nodes.forEach((node: any) => {
+      src = getNodeValue(node);
       if (src) {
-        src = urlObj.resolve(rootUrl, src);
         images.push(src);
       }
     });
   }
 
-  if (images.length <= 0 && !imagesPropertyType) {
-    src = doc(`link[rel=image_src]`).attr(`href`);
-    if (src) {
-      src = urlObj.resolve(rootUrl, src);
-      images = [src];
-    } else {
-      nodes = doc(`img`);
+  // if (images.length <= 0 && !imagesPropertyType) {
+  //   src = doc(`link[rel=image_src]`).attr(`href`);
+  //   if (src) {
+  //     src = urlObj.resolve(rootUrl, src);
+  //     images = [src];
+  //   } else {
+  //     nodes = doc(`img`);
 
-      if (nodes.length) {
-        dic = {};
-        images = [];
-        nodes.each((_: number, node: any) => {
-          src = node.attribs.src;
-          if (src && !dic[src]) {
-            dic[src] = true;
-            // width = node.attribs.width;
-            // height = node.attribs.height;
-            images.push(urlObj.resolve(rootUrl, src));
-          }
-        });
-      }
-    }
-  }
+  //     if (nodes.length) {
+  //       dic = {};
+  //       images = [];
+  //       nodes.each((_: number, node: any) => {
+  //         src = node.attribs.src;
+  //         if (src && !dic[src]) {
+  //           dic[src] = true;
+  //           // width = node.attribs.width;
+  //           // height = node.attribs.height;
+  //           images.push(urlObj.resolve(rootUrl, src));
+  //         }
+  //       });
+  //     }
+  //   }
+  // }
 
   return images;
 }
@@ -108,37 +109,40 @@ function getVideos(doc: any) {
   let videoObj;
   let index;
 
-  const nodes = doc(`meta[property='og:video']`);
+  const nodes = doc.querySelect(`meta[property='og:video']`);
+
   const { length } = nodes;
 
+  // console.warn(`ROPO VIDEO NODES`, nodes);
+
   if (length) {
-    nodeTypes = doc(`meta[property='og:video:type']`);
-    nodeSecureUrls = doc(`meta[property='og:video:secure_url']`);
-    width = doc(`meta[property='og:video:width']`).attr(`content`);
-    height = doc(`meta[property='og:video:height']`).attr(`content`);
+    // nodeTypes = doc.querySelect(`meta[property='og:video:type']`);
+    // nodeSecureUrls = doc.querySelect(`meta[property='og:video:secure_url']`);
+    // width = doc.querySelect(`meta[property='og:video:width']`).attr(`content`);
+    // height = doc.querySelect(`meta[property='og:video:height']`).attr(`content`);
 
-    for (index = 0; index < length; index += 1) {
-      video = nodes[index].attribs.content;
+    // for (index = 0; index < length; index += 1) {
+    //   video = nodes[index].attribs.content;
 
-      nodeType = nodeTypes[index];
-      videoType = nodeType ? nodeType.attribs.content : null;
+    //   nodeType = nodeTypes[index];
+    //   videoType = nodeType ? nodeType.attribs.content : null;
 
-      nodeSecureUrl = nodeSecureUrls[index];
-      videoSecureUrl = nodeSecureUrl ? nodeSecureUrl.attribs.content : null;
+    //   nodeSecureUrl = nodeSecureUrls[index];
+    //   videoSecureUrl = nodeSecureUrl ? nodeSecureUrl.attribs.content : null;
 
-      videoObj = {
-        url: video,
-        secureUrl: videoSecureUrl,
-        type: videoType,
-        width,
-        height,
-      };
-      if (videoType && videoType.indexOf(`video/`) === 0) {
-        videos.splice(0, 0, videoObj);
-      } else {
-        videos.push(videoObj);
-      }
-    }
+    //   videoObj = {
+    //     url: video,
+    //     secureUrl: videoSecureUrl,
+    //     type: videoType,
+    //     width,
+    //     height,
+    //   };
+    //   if (videoType && videoType.indexOf(`video/`) === 0) {
+    //     videos.splice(0, 0, videoObj);
+    //   } else {
+    //     videos.push(videoObj);
+    //   }
+    // }
   }
 
   return videos;
@@ -152,30 +156,26 @@ function getDefaultFavicon(rootUrl: string) {
 
 // returns an array of URL's to favicon images
 function getFavicons(doc: any, rootUrl: string) {
-  const images = [];
-  let nodes = [];
+  let images: string[] = [];
+  const nodes = [];
   let src;
 
   const relSelectors = [
     `rel=icon`,
-    `rel="shortcut icon"`,
-    `rel=apple-touch-icon`,
+    // `rel="shortcut icon"`,
+    // `rel=apple-touch-icon`,
   ];
 
   relSelectors.forEach((relSelector) => {
     // look for all icon tags
-    nodes = doc(`link[${relSelector}]`);
+    const favicons = doc.querySelect(`link[${relSelector}]`).map((node: any) => {
+      // console.warn(`Favicons map iteration`, urlObj.resolve(rootUrl, value));
+      console.warn(`Favicons map iteration`, node);
+      const value = getNodeValue(node);
+      return urlObj.resolve(rootUrl, value);
+    });
 
-    // collect all images from icon tags
-    if (nodes.length) {
-      nodes.each((_: number, node: any) => {
-        src = node.attribs.href;
-        if (src) {
-          src = urlObj.resolve(rootUrl, src);
-          images.push(src);
-        }
-      });
-    }
+    images = images.concat(favicons);
   });
 
   // if no icon images, use default favicon location
@@ -187,39 +187,39 @@ function getFavicons(doc: any, rootUrl: string) {
 }
 
 function parseImageResponse(url: string, contentType: string) {
-  return {
+  return new ResponseModel({
     url,
     mediaType: `image`,
     contentType,
     favicons: [getDefaultFavicon(url)],
-  };
+  });
 }
 
 function parseAudioResponse(url: string, contentType: string) {
-  return {
+  return new ResponseModel({
     url,
     mediaType: `audio`,
     contentType,
     favicons: [getDefaultFavicon(url)],
-  };
+  });
 }
 
 function parseVideoResponse(url: string, contentType: string) {
-  return {
+  return new ResponseModel({
     url,
     mediaType: `video`,
     contentType,
     favicons: [getDefaultFavicon(url)],
-  };
+  });
 }
 
 function parseApplicationResponse(url: string, contentType: string) {
-  return {
+  return new ResponseModel({
     url,
     mediaType: `application`,
     contentType,
     favicons: [getDefaultFavicon(url)],
-  };
+  });
 }
 
 function parseTextResponse(
@@ -228,9 +228,9 @@ function parseTextResponse(
   options: ILinkPreviewOptions = {},
   contentType: string,
 ) {
-  const doc = cheerio.load(body);
+  const doc = new DomParser.DOMParser().parseFromString(body, `text/html`);
 
-  return {
+  return new ResponseModel({
     url,
     title: getTitle(doc),
     siteName: getSiteName(doc),
@@ -240,14 +240,14 @@ function parseTextResponse(
     images: getImages(doc, url, options.imagesPropertyType),
     videos: getVideos(doc),
     favicons: getFavicons(doc, url),
-  };
+  });
 }
 
 
 export async function getLinkPreview(
   text: string,
   options?: ILinkPreviewOptions,
-) {
+): Promise<ResponseModel> {
   if (!text || typeof text !== `string`) {
     throw new Error(`link-preview-js did not receive a valid url or text`);
   }
