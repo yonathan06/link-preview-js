@@ -132,6 +132,15 @@ describe(`link preview`, () => {
     expect(linkInfo.mediaType).toEqual(`website`);
   });
 
+  it(`should handle youtube urls`, async () => {
+    const linkInfo = await getLinkPreview(
+      `https://www.youtube.com/watch?v=MejbOFk7H6c`,
+    );
+    expect(linkInfo.url).toEqual(`https://www.youtube.com/watch?v=MejbOFk7H6c`);
+    expect(linkInfo.siteName).toEqual(`YouTube`);
+    expect(linkInfo.mediaType).toEqual(`video.other`);
+  });
+
   // This site changed? it is not returning application any more but rather website
   // it(`should handle application urls`, async () => {
   //   const linkInfo = await getLinkPreview(
